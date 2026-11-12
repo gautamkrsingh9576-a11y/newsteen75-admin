@@ -110,9 +110,17 @@ export type CampaignPerformance={
 export type AdminCampaign={
   id:string;
   name:string;
+  creative_mode:'linked_content'|'direct';
   content_type:'article'|'video';
   article_id:string|null;
   video_id:string|null;
+  headline:string|null;
+  description:string|null;
+  image_url:string|null;
+  brand:string|null;
+  cta_text:string|null;
+  cta_url:string|null;
+  sponsored:boolean;
   placement:'articles_feed'|'videos_feed'|'specific_category';
   target_category:string|null;
   frequency_every:number;
