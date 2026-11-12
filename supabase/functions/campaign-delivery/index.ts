@@ -135,6 +135,46 @@ Deno.serve(async (req) => {
 
     const response = eligible
       .map((campaign) => {
+        if (campaign.creative_mode === "direct") {
+          if (
+            campaign.content_type !== "article" ||
+            !campaign.headline ||
+            !campaign.image_url
+          ) {
+            return null;
+          }
+
+          return {
+            id: campaign.id,
+            name: campaign.name,
+            creative_mode: "direct",
+            content_type: "article",
+            placement: campaign.placement,
+            target_category: campaign.target_category,
+            frequency_every: campaign.frequency_every,
+            priority: campaign.priority,
+            start_at: campaign.start_at,
+            end_at: campaign.end_at,
+            content: {
+              id: campaign.id,
+              campaign_id: campaign.id,
+              is_campaign: true,
+              headline: campaign.headline,
+              summary: campaign.description ?? "",
+              image_url: campaign.image_url,
+              category: campaign.target_category,
+              brand: campaign.brand,
+              cta_text: campaign.cta_text,
+              cta_url: campaign.cta_url,
+              sponsored: campaign.sponsored ?? true,
+              status: campaign.status,
+              start_at: campaign.start_at,
+              end_at: campaign.end_at,
+              priority: campaign.priority,
+            },
+          };
+        }
+
         const content =
           campaign.content_type === "article"
             ? articles.get(campaign.article_id)
@@ -147,6 +187,7 @@ Deno.serve(async (req) => {
         return {
           id: campaign.id,
           name: campaign.name,
+          creative_mode: "linked_content",
           content_type: campaign.content_type,
           placement: campaign.placement,
           target_category: campaign.target_category,
