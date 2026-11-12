@@ -72,7 +72,7 @@ export default async function AnalyticsView({
   const result = await getAnalytics(days);
   const data = result.state === 'success' ? result.data : null;
   const metrics = data?.metrics || {};
-  const system = data?.system_metrics || {};
+  const system = data?.system_metrics;
 
   const title: Record<string, string> = {
     overview: 'Overview',
@@ -180,7 +180,7 @@ export default async function AnalyticsView({
                   <span>{label}</span>
                   <Icon size={17} />
                 </div>
-                <div className="metric-value">{numberValue(system[key])}</div>
+                <div className="metric-value">{numberValue(system?.[key])}</div>
                 <div className="metric-foot">
                   <span className="metric-line">●</span> Supabase production
                 </div>
