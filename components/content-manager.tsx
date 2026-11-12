@@ -2,6 +2,7 @@
 
 import { FormEvent, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import MediaUploader from '@/components/media-uploader';
 import {
   Plus,
   FileText,
@@ -55,6 +56,8 @@ export default function ContentManager({
   const [brand, setBrand] = useState('');
   const [sponsored, setSponsored] = useState(false);
   const [contentType, setContentType] = useState<'article' | 'video'>('article');
+  const [imageUrl, setImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
 
@@ -88,6 +91,8 @@ export default function ContentManager({
       setBrand('');
       setSponsored(false);
       setContentType('article');
+      setImageUrl('');
+      setVideoUrl('');
       setShow(false);
       router.refresh();
     });
@@ -348,17 +353,25 @@ export default function ContentManager({
                       />
                     </label>
 
-                    <label>
-                      {isArticle ? 'Card Image URL' : 'Thumbnail URL'}
-                      <input name="image_url" type="url" placeholder="https://" />
-                    </label>
+                    {isArticle ? (
+                      <MediaUploader
+                        kind="article-image"
+                        name="image_url"
+                        label="Article Image"
+                        value={imageUrl}
+                        onUploaded={setImageUrl}
+                      />
+                    ) : (
+                      <MediaUploader
+                        kind="video"
+                        name="video_url"
+                        label="Full-screen Video"
+                        value={videoUrl}
+                        onUploaded={setVideoUrl}
+                      />
+                    )}
 
-                    {isVideo ? (
-                      <label>
-                        Video URL
-                        <input name="video_url" type="url" placeholder="https://" />
-                      </label>
-                    ) : null}
+                    {isVideo ? <input type="hidden" name="image_url" value="" /> : null}
 
                     <label>
                       Category
@@ -445,8 +458,16 @@ export default function ContentManager({
 
                 <div className="phone-preview">
                   <div className="preview-img">
-                    <ImageIcon size={28} />
-                    {isVideo ? <span className="play">▶</span> : null}
+                    {isVideo && videoUrl ? (
+                      <video src={videoUrl} controls muted playsInline />
+                    ) : isArticle && imageUrl ? (
+                      <img src={imageUrl} alt="Article preview" />
+                    ) : (
+                      <>
+                        <ImageIcon size={28} />
+                        {isVideo ? <span className="play">▶</span> : null}
+                      </>
+                    )}
                   </div>
                   <div className="preview-body">
                     {sponsored ? <span className="sponsored">SPONSORED</span> : null}
