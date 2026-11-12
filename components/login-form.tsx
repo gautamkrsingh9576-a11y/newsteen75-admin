@@ -35,6 +35,7 @@ export default function LoginForm() {
       return;
     }
 
+    sessionStorage.setItem('newsteen75-admin-session', 'active');
     window.location.assign('/');
   }
 
