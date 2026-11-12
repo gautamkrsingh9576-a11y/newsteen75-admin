@@ -62,3 +62,8 @@
 .campaign-resize-controls select,.campaign-resize-controls input[type="range"]{width:100%}
 .campaign-resize-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 @media (max-width:700px){.campaign-resize-controls{grid-template-columns:1fr}.campaign-resize-preview{max-width:150px}}
+
+
+.form-actions{position:sticky;bottom:-24px;z-index:4;margin:4px -24px -24px;padding:14px 24px 18px;background:linear-gradient(to bottom,#ffffffee 0%,#fff 28%);border-top:1px solid #eef0f2;display:grid;gap:8px}
+.form-actions .primary{width:100%;min-height:42px}
+.save-hint{font-size:11px;color:#8a4b28;background:#fff8ed;border:1px solid #f2dfc2;border-radius:7px;padding:8px 10px}
