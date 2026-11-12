@@ -22,9 +22,25 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const page = nav.find((n) => n.href === path)?.label || 'Overview';
   const [loggingOut, setLoggingOut] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+
+  useEffect(() => {
+    const tabSession = sessionStorage.getItem('newsteen75-admin-session');
+
+    if (tabSession === 'active') {
+      setSessionReady(true);
+      return;
+    }
+
+    const client = createBrowserSupabaseClient();
+    client.auth.signOut().finally(() => {
+      window.location.replace('/login');
+    });
+  }, []);
 
   async function handleLogout() {
     setLoggingOut(true);
+    sessionStorage.removeItem('newsteen75-admin-session');
     const client = createBrowserSupabaseClient();
     await client.auth.signOut();
     window.location.assign('/login');
@@ -34,6 +50,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     const id = window.setInterval(() => router.refresh(), 30000);
     return () => window.clearInterval(id);
   }, [router]);
+
+  if (!sessionReady) {
+    return <div className="session-check">Checking secure session…</div>;
+  }
 
   return (
     <div className={'app ' + (collapsed ? 'collapsed' : '')}>
