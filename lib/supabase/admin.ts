@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
+const NEWS_TEEN_75_SUPABASE_URL = 'https://vwoqjsjlfxcvsjygxwgp.supabase.co';
+
 function cleanEnv(value: string | undefined) {
   if (!value) return undefined;
   const trimmed = value.trim();
@@ -7,17 +9,18 @@ function cleanEnv(value: string | undefined) {
 }
 
 export function createAdminClient() {
-  const url = cleanEnv(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ??
-    process.env.SUPABASE_URL,
-  );
+  const url =
+    cleanEnv(
+      process.env.NEXT_PUBLIC_SUPABASE_URL ??
+      process.env.SUPABASE_URL,
+    ) ?? NEWS_TEEN_75_SUPABASE_URL;
 
   const secret = cleanEnv(
     process.env.SUPABASE_SECRET_KEY ??
     process.env.SUPABASE_SERVICE_ROLE_KEY,
   );
 
-  if (!url || !secret) {
+  if (!secret) {
     throw new Error('Supabase server configuration is missing.');
   }
 
