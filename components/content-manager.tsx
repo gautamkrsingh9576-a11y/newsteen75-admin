@@ -58,6 +58,7 @@ export default function ContentManager({
   const [contentType, setContentType] = useState<'article' | 'video'>('article');
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [selectedContentId, setSelectedContentId] = useState('');
   const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
 
@@ -65,6 +66,9 @@ export default function ContentManager({
   const isVideo = kind === 'videos';
   const singular = isArticle ? 'Article' : isVideo ? 'Video' : 'Campaign';
   const Icon = isArticle ? FileText : isVideo ? Video : Megaphone;
+  const activeOptions = contentType === 'article' ? articleOptions : videoOptions;
+  const selectedCampaignContent = activeOptions.find((option) => option.id === selectedContentId);
+  const campaignPreviewUrl = selectedCampaignContent?.media_url || '';
 
   function closeModal() {
     if (pending) return;
@@ -93,6 +97,7 @@ export default function ContentManager({
       setContentType('article');
       setImageUrl('');
       setVideoUrl('');
+      setSelectedContentId('');
       setShow(false);
       router.refresh();
     });
@@ -289,7 +294,10 @@ export default function ContentManager({
                       <select
                         name="content_type"
                         value={contentType}
-                        onChange={(event) => setContentType(event.target.value as 'article' | 'video')}
+                        onChange={(event) => {
+                          setContentType(event.target.value as 'article' | 'video');
+                          setSelectedContentId('');
+                        }}
                       >
                         <option value="article">Article</option>
                         <option value="video">Video</option>
@@ -298,11 +306,16 @@ export default function ContentManager({
 
                     <label>
                       Content
-                      <select name="content_id" required defaultValue="">
+                      <select
+                        name="content_id"
+                        required
+                        value={selectedContentId}
+                        onChange={(event) => setSelectedContentId(event.target.value)}
+                      >
                         <option value="" disabled>
                           Select {contentType}
                         </option>
-                        {(contentType === 'article' ? articleOptions : videoOptions).map((option) => (
+                        {activeOptions.map((option) => (
                           <option key={option.id} value={option.id}>
                             {option.label} · {prettyStatus(option.status)}
                           </option>
@@ -310,7 +323,7 @@ export default function ContentManager({
                       </select>
                     </label>
 
-                    {(contentType === 'article' ? articleOptions : videoOptions).length === 0 ? (
+                    {activeOptions.length === 0 ? (
                       <div className="notice notice-error">
                         <strong>No {contentType} available</strong>
                         <span>Create the content first, then create its campaign.</span>
@@ -445,7 +458,7 @@ export default function ContentManager({
                   disabled={
                     pending ||
                     (kind === 'campaigns' &&
-                      (contentType === 'article' ? articleOptions : videoOptions).length === 0)
+                      activeOptions.length === 0)
                   }
                 >
                   {pending ? 'Saving…' : `Save ${singular}`}
@@ -458,14 +471,20 @@ export default function ContentManager({
 
                 <div className="phone-preview">
                   <div className="preview-img">
-                    {isVideo && videoUrl ? (
-                      <video src={videoUrl} controls muted playsInline />
+                    {kind === 'campaigns' && campaignPreviewUrl ? (
+                      contentType === 'video' ? (
+                        <video src={campaignPreviewUrl} muted playsInline />
+                      ) : (
+                        <img src={campaignPreviewUrl} alt="Campaign article preview" />
+                      )
+                    ) : isVideo && videoUrl ? (
+                      <video src={videoUrl} muted playsInline />
                     ) : isArticle && imageUrl ? (
                       <img src={imageUrl} alt="Article preview" />
                     ) : (
                       <>
                         <ImageIcon size={28} />
-                        {isVideo ? <span className="play">▶</span> : null}
+                        {(isVideo || (kind === 'campaigns' && contentType === 'video')) ? <span className="play">▶</span> : null}
                       </>
                     )}
                   </div>
