@@ -54,8 +54,10 @@ export default function ContentManager({
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [brand, setBrand] = useState('');
-  const [sponsored, setSponsored] = useState(false);
+  const [sponsored, setSponsored] = useState(true);
+  const [creativeMode, setCreativeMode] = useState<'direct' | 'linked_content'>('direct');
   const [contentType, setContentType] = useState<'article' | 'video'>('article');
+  const [campaignHeadline, setCampaignHeadline] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [selectedContentId, setSelectedContentId] = useState('');
@@ -68,7 +70,8 @@ export default function ContentManager({
   const Icon = isArticle ? FileText : isVideo ? Video : Megaphone;
   const activeOptions = contentType === 'article' ? articleOptions : videoOptions;
   const selectedCampaignContent = activeOptions.find((option) => option.id === selectedContentId);
-  const campaignPreviewUrl = selectedCampaignContent?.media_url || '';
+  const campaignPreviewUrl =
+    creativeMode === 'direct' ? imageUrl : selectedCampaignContent?.media_url || '';
 
   function closeModal() {
     if (pending) return;
@@ -93,8 +96,10 @@ export default function ContentManager({
       setTitle('');
       setSummary('');
       setBrand('');
-      setSponsored(false);
+      setSponsored(true);
+      setCreativeMode('direct');
       setContentType('article');
+      setCampaignHeadline('');
       setImageUrl('');
       setVideoUrl('');
       setSelectedContentId('');
@@ -290,51 +295,140 @@ export default function ContentManager({
                 {kind === 'campaigns' ? (
                   <>
                     <label>
-                      Content Type
+                      Campaign Creative
                       <select
-                        name="content_type"
-                        value={contentType}
+                        name="creative_mode"
+                        value={creativeMode}
                         onChange={(event) => {
-                          setContentType(event.target.value as 'article' | 'video');
+                          const next = event.target.value as 'direct' | 'linked_content';
+                          setCreativeMode(next);
                           setSelectedContentId('');
+                          if (next === 'direct') setContentType('article');
                         }}
                       >
-                        <option value="article">Article</option>
-                        <option value="video">Video</option>
+                        <option value="direct">Direct Campaign Card</option>
+                        <option value="linked_content">Promote Existing Content</option>
                       </select>
                     </label>
 
-                    <label>
-                      Content
-                      <select
-                        name="content_id"
-                        required
-                        value={selectedContentId}
-                        onChange={(event) => setSelectedContentId(event.target.value)}
-                      >
-                        <option value="" disabled>
-                          Select {contentType}
-                        </option>
-                        {activeOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label} · {prettyStatus(option.status)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    {creativeMode === 'direct' ? (
+                      <>
+                        <label>
+                          Campaign Headline
+                          <input
+                            name="headline"
+                            value={campaignHeadline}
+                            onChange={(event) => setCampaignHeadline(event.target.value)}
+                            placeholder="Headline shown in the app"
+                            required
+                          />
+                        </label>
 
-                    {activeOptions.length === 0 ? (
-                      <div className="notice notice-error">
-                        <strong>No {contentType} available</strong>
-                        <span>Create the content first, then create its campaign.</span>
-                      </div>
-                    ) : null}
+                        <label>
+                          Description
+                          <textarea
+                            name="summary"
+                            value={summary}
+                            onChange={(event) => setSummary(event.target.value)}
+                            placeholder="Short campaign description"
+                          />
+                        </label>
+
+                        <MediaUploader
+                          kind="campaign-image"
+                          name="image_url"
+                          label="Campaign Image"
+                          value={imageUrl}
+                          onUploaded={setImageUrl}
+                        />
+
+                        <label>
+                          Brand / Source
+                          <input
+                            name="brand"
+                            value={brand}
+                            onChange={(event) => setBrand(event.target.value)}
+                            placeholder="Brand or advertiser"
+                          />
+                        </label>
+
+                        <div className="form-grid">
+                          <label>
+                            CTA Text
+                            <input name="cta_text" placeholder="Learn more" />
+                          </label>
+                          <label>
+                            CTA URL
+                            <input name="cta_url" type="url" placeholder="https://" />
+                          </label>
+                        </div>
+
+                        <label className="check">
+                          <input
+                            name="sponsored"
+                            type="checkbox"
+                            checked={sponsored}
+                            onChange={(event) => setSponsored(event.target.checked)}
+                          />
+                          Sponsored campaign
+                          <small>Shows a clear promotional disclosure on the card.</small>
+                        </label>
+
+                        <input type="hidden" name="content_type" value="article" />
+                        <input type="hidden" name="content_id" value="" />
+                      </>
+                    ) : (
+                      <>
+                        <label>
+                          Content Type
+                          <select
+                            name="content_type"
+                            value={contentType}
+                            onChange={(event) => {
+                              setContentType(event.target.value as 'article' | 'video');
+                              setSelectedContentId('');
+                            }}
+                          >
+                            <option value="article">Article</option>
+                            <option value="video">Video</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          Content
+                          <select
+                            name="content_id"
+                            required
+                            value={selectedContentId}
+                            onChange={(event) => setSelectedContentId(event.target.value)}
+                          >
+                            <option value="" disabled>
+                              Select {contentType}
+                            </option>
+                            {activeOptions.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {option.label} · {prettyStatus(option.status)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        {activeOptions.length === 0 ? (
+                          <div className="notice notice-error">
+                            <strong>No {contentType} available</strong>
+                            <span>Create the content first, then create its campaign.</span>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
 
                     <label>
                       Placement
                       <select name="placement" defaultValue="articles_feed">
                         <option value="articles_feed">Articles Feed</option>
-                        <option value="videos_feed">Videos Feed</option>
+                        {creativeMode === 'linked_content' && contentType === 'video' ? (
+                          <option value="videos_feed">Videos Feed</option>
+                        ) : null}
                         <option value="specific_category">Specific Category</option>
                       </select>
                     </label>
@@ -458,7 +552,11 @@ export default function ContentManager({
                   disabled={
                     pending ||
                     (kind === 'campaigns' &&
-                      activeOptions.length === 0)
+                      creativeMode === 'linked_content' &&
+                      activeOptions.length === 0) ||
+                    (kind === 'campaigns' &&
+                      creativeMode === 'direct' &&
+                      (!campaignHeadline || !imageUrl))
                   }
                 >
                   {pending ? 'Saving…' : `Save ${singular}`}
@@ -472,10 +570,10 @@ export default function ContentManager({
                 <div className="phone-preview">
                   <div className="preview-img">
                     {kind === 'campaigns' && campaignPreviewUrl ? (
-                      contentType === 'video' ? (
+                      creativeMode === 'linked_content' && contentType === 'video' ? (
                         <video src={campaignPreviewUrl} muted playsInline />
                       ) : (
-                        <img src={campaignPreviewUrl} alt="Campaign article preview" />
+                        <img src={campaignPreviewUrl} alt="Campaign preview" />
                       )
                     ) : isVideo && videoUrl ? (
                       <video src={videoUrl} muted playsInline />
@@ -490,11 +588,23 @@ export default function ContentManager({
                   </div>
                   <div className="preview-body">
                     {sponsored ? <span className="sponsored">SPONSORED</span> : null}
-                    <small>{kind === 'campaigns' ? 'NEWS TEEN 75 CAMPAIGN' : brand || 'BRAND / SOURCE'}</small>
-                    <h3>{title || `Your ${singular.toLowerCase()} title appears here`}</h3>
+                    <small>
+                      {kind === 'campaigns'
+                        ? creativeMode === 'direct'
+                          ? brand || 'SPONSORED CAMPAIGN'
+                          : 'NEWS TEEN 75 CAMPAIGN'
+                        : brand || 'BRAND / SOURCE'}
+                    </small>
+                    <h3>
+                      {kind === 'campaigns' && creativeMode === 'direct'
+                        ? campaignHeadline || 'Campaign headline appears here'
+                        : title || `Your ${singular.toLowerCase()} title appears here`}
+                    </h3>
                     <p>
                       {kind === 'campaigns'
-                        ? `${contentType === 'article' ? 'Article' : 'Video'} promotion`
+                        ? creativeMode === 'direct'
+                          ? summary || 'Campaign description appears here.'
+                          : `${contentType === 'article' ? 'Article' : 'Video'} promotion`
                         : summary || 'A short description will appear here.'}
                     </p>
                     <div className="preview-footer">
@@ -634,12 +744,17 @@ function CampaignRow({
 }) {
   const contentId = record.article_id || record.video_id;
   const options = record.content_type === 'article' ? articleOptions : videoOptions;
-  const content = options.find((option) => option.id === contentId)?.label || 'Content unavailable';
+  const content =
+    record.creative_mode === 'direct'
+      ? record.headline || 'Direct campaign'
+      : options.find((option) => option.id === contentId)?.label || 'Content unavailable';
 
   return (
     <tr>
       <td><strong>{record.name}</strong></td>
-      <td>{prettyStatus(record.content_type)} · {content}</td>
+      <td>
+        {record.creative_mode === 'direct' ? 'Direct card' : prettyStatus(record.content_type)} · {content}
+      </td>
       <td>{placementLabel(record.placement)}</td>
       <td><StatusControl id={record.id} status={record.status} pending={pending} onStatus={onStatus} /></td>
       <td>{formatDate(record.start_at)} → {formatDate(record.end_at)}</td>
