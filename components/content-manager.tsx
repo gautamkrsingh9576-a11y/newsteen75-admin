@@ -546,21 +546,31 @@ export default function ContentManager({
 
                 {error ? <div className="error">{error}</div> : null}
 
-                <button
-                  className="primary"
-                  type="submit"
-                  disabled={
-                    pending ||
-                    (kind === 'campaigns' &&
-                      creativeMode === 'linked_content' &&
-                      activeOptions.length === 0) ||
-                    (kind === 'campaigns' &&
-                      creativeMode === 'direct' &&
-                      (!campaignHeadline || !imageUrl))
-                  }
-                >
-                  {pending ? 'Saving…' : `Save ${singular}`}
-                </button>
+                <div className="form-actions">
+                  {kind === 'campaigns' && creativeMode === 'direct' && (!campaignHeadline || !imageUrl) ? (
+                    <div className="save-hint">
+                      {!campaignHeadline
+                        ? 'Add a campaign headline to continue.'
+                        : 'Resize & Upload the campaign image to continue.'}
+                    </div>
+                  ) : null}
+
+                  <button
+                    className="primary"
+                    type="submit"
+                    disabled={
+                      pending ||
+                      (kind === 'campaigns' &&
+                        creativeMode === 'linked_content' &&
+                        activeOptions.length === 0) ||
+                      (kind === 'campaigns' &&
+                        creativeMode === 'direct' &&
+                        (!campaignHeadline || !imageUrl))
+                    }
+                  >
+                    {pending ? 'Saving…' : `Save ${singular}`}
+                  </button>
+                </div>
               </form>
 
               <div className="preview-col">
