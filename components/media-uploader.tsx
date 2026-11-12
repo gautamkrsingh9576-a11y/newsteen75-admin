@@ -5,7 +5,7 @@ import * as tus from 'tus-js-client';
 import { Image as ImageIcon, Upload, Video } from 'lucide-react';
 import { createMediaUploadTicket } from '@/app/content-actions';
 
-type MediaKind = 'article-image' | 'video';
+type MediaKind = 'article-image' | 'campaign-image' | 'video';
 
 type Props = {
   kind: MediaKind;
