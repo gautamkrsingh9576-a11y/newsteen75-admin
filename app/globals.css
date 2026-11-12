@@ -67,3 +67,8 @@
 .form-actions{position:sticky;bottom:-24px;z-index:4;margin:4px -24px -24px;padding:14px 24px 18px;background:linear-gradient(to bottom,#ffffffee 0%,#fff 28%);border-top:1px solid #eef0f2;display:grid;gap:8px}
 .form-actions .primary{width:100%;min-height:42px}
 .save-hint{font-size:11px;color:#8a4b28;background:#fff8ed;border:1px solid #f2dfc2;border-radius:7px;padding:8px 10px}
+
+
+.preview-img img,.preview-img video{width:100%;height:100%;display:block;object-fit:cover}
+.campaign-phone-preview .preview-img{height:auto;aspect-ratio:9/16;background:#111;overflow:hidden}
+.campaign-phone-preview .preview-img img{transform-origin:center center}
