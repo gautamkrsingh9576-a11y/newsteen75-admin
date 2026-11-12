@@ -1,0 +1,2 @@
+import LoginForm from '@/components/login-form';
+export default function Login() { return <main className="login-page"><div className="login-brand"><span className="mark">N<span>75</span></span><span>NewsTeen75 <small>ADMIN</small></span></div><div className="login-card"><div className="eyebrow">PRIVATE WORKSPACE</div><h1>Welcome back.</h1><p>Sign in to manage your NewsTeen75 dashboard.</p><LoginForm/><div className="login-note">Access is limited to approved administrators.</div></div><div className="login-footer">© NewsTeen75 · Admin workspace</div></main>; }
