@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createAdminSessionClient } from '@/lib/supabase/admin-session';
 import type {
   AdminArticle,
   AdminCampaign,
@@ -14,7 +14,7 @@ export type ContentManagerData = {
 };
 
 export async function getContentManagerData(kind: AdminKind): Promise<ContentManagerData> {
-  const client = createAdminClient();
+  const client = await createAdminSessionClient();
 
   const [articlesResult, videosResult] = await Promise.all([
     client
