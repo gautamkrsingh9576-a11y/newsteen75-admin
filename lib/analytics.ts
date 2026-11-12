@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createAdminSessionClient } from '@/lib/supabase/admin-session';
 import type { AnalyticsSummary } from '@/types';
 
 export type AnalyticsResult =
@@ -7,7 +7,7 @@ export type AnalyticsResult =
 
 export async function getAnalytics(days: number): Promise<AnalyticsResult> {
   try {
-    const client = createAdminClient();
+    const client = await createAdminSessionClient();
     const end = new Date();
     const start = new Date(end.getTime() - days * 86400000);
 
