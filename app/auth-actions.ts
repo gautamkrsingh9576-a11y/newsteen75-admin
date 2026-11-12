@@ -9,19 +9,19 @@ export async function signInAdmin(formData: FormData) {
   const password = String(formData.get('password') ?? '');
 
   if (!email || !password) {
-    return { ok: false, error: 'Email and password are required.' };
+    redirect('/login?error=missing');
   }
 
   const client = await createClient();
   const { data, error } = await client.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    return { ok: false, error: 'Invalid email or password.' };
+    redirect('/login?error=invalid');
   }
 
   if (data.user.id !== ADMIN_USER_ID) {
     await client.auth.signOut();
-    return { ok: false, error: 'This account is not authorized for NewsTeen75 Admin.' };
+    redirect('/login?error=unauthorized');
   }
 
   redirect('/');
