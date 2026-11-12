@@ -46,3 +46,6 @@
 .logout-btn:hover{background:#f9fafb;border-color:#d0d5dd;color:#101828}
 .logout-btn:disabled{opacity:.6;cursor:not-allowed}
 .collapsed .logout-btn{justify-content:center;padding:10px}
+
+
+.session-check{min-height:100vh;display:grid;place-items:center;background:#f6f8fa;color:#667085;font-size:14px}
