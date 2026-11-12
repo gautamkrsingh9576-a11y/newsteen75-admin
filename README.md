@@ -4,36 +4,25 @@ Standalone Next.js dashboard. It does not contain or modify the Android applicat
 
 ## Current access mode
 
-The dashboard currently opens directly without a login screen or Supabase Auth gate.
+The dashboard opens directly without a login screen.
 
-Because there is no login protection, anyone who knows the deployed URL may be able to open the dashboard. Use Vercel deployment protection, a private network, or re-enable authentication later if access control is needed.
+## Analytics connection
 
-## Local setup
+Analytics are fetched only from the Next.js/Vercel server using:
 
-1. Use Node.js 20.9+ and npm.
-2. Run `npm install`.
-3. Copy `.env.example` to `.env.local`.
-4. Provide:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-5. Run `npm run dev`.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SECRET_KEY`
 
-Never use a Supabase service-role key in browser-exposed environment variables.
+The secret key is server-only and must never be prefixed with `NEXT_PUBLIC_`, committed to GitHub, or placed in browser code.
 
-## Analytics and safety
+The dashboard calls `public.dashboard_analytics_summary`, which returns aggregate metrics only. The SQL in `supabase/dashboard-schema.sql` revokes RPC execution from `public`, `anon`, and `authenticated` and grants it only to `service_role`.
 
-The optional `supabase/dashboard-schema.sql` defines a security-invoker aggregation function and is never run automatically.
+## Safety
 
-The dashboard uses the public Supabase client configuration only. Existing Row Level Security remains in force. If the anonymous role cannot read the required analytics data or call the aggregation function, the dashboard will show an unavailable/empty state rather than bypass security.
+No destructive database operations are run by this repository.
 
-No destructive database operations are run by this project.
+The NewsTeen75 Android app, website, automation repository, existing feed logic, and existing production data are separate and are not modified by this dashboard.
 
 ## Content and campaigns
 
-Forms are previews only. No records, uploads, statuses, or placements are saved until a separate CMS backend is implemented.
-
-## Vercel
-
-Import this repository into Vercel and set the two required environment variables above.
-
-The NewsTeen75 Android app, website, and automation repositories are separate and are not changed by this dashboard.
+Forms are currently previews only. CMS persistence and campaign delivery will be implemented separately after analytics is verified.
