@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -19,6 +19,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const page = nav.find((n) => n.href === path)?.label || 'Overview';
+
+  useEffect(() => {
+    const id = window.setInterval(() => router.refresh(), 30000);
+    return () => window.clearInterval(id);
+  }, [router]);
 
   return (
     <div className={'app ' + (collapsed ? 'collapsed' : '')}>
@@ -98,7 +103,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <div className="top-actions">
             <span className="connection">
               <i /> Dashboard
-              <span className="connection-label"> · direct access</span>
+              <span className="connection-label"> · auto-refresh 30s</span>
             </span>
 
             <button className="icon-btn refresh" title="Refresh" aria-label="Refresh" onClick={() => router.refresh()}>
