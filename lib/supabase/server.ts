@@ -1,18 +1,19 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+export const SUPABASE_URL = 'https://vwoqjsjlfxcvsjygxwgp.supabase.co';
+export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_hKXsHS1YImdkp6G7IFhslA_AUz-XgU7';
+
 export function configured() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  return true;
 }
 
 export async function createClient() {
   const jar = await cookies();
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY,
     {
       cookies: {
         getAll: () => jar.getAll(),
@@ -20,10 +21,10 @@ export async function createClient() {
           try {
             values.forEach(({ name, value, options }) => jar.set(name, value, options));
           } catch {
-            // Server Components may be read-only; analytics requests still work.
+            // Read-only Server Components cannot mutate cookies.
           }
         },
       },
-    }
+    },
   );
 }
