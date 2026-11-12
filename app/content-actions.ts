@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createAdminSessionClient } from '@/lib/supabase/admin-session';
+import { SUPABASE_URL } from '@/lib/supabase/server';
 import type { AdminKind, AdminStatus } from '@/types';
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -80,7 +81,7 @@ export async function createAdminContent(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const client = createAdminClient();
+    const client = await createAdminSessionClient();
     const status = parseStatus(formData);
     const priority = parsePriority(formData);
     const startAt = optionalDate(formData, 'start_at');
@@ -181,7 +182,7 @@ export async function setAdminContentStatus(
   try {
     if (!statuses.has(status)) return { ok: false, error: 'Invalid status.' };
 
-    const client = createAdminClient();
+    const client = await createAdminSessionClient();
     const table =
       kind === 'articles'
         ? 'admin_custom_articles'
@@ -206,7 +207,7 @@ export async function deleteAdminContent(
   id: string,
 ): Promise<ActionResult> {
   try {
-    const client = createAdminClient();
+    const client = await createAdminSessionClient();
     const table =
       kind === 'articles'
         ? 'admin_custom_articles'
@@ -280,7 +281,7 @@ export async function createMediaUploadTicket(
       .slice(0, 60) || 'media';
 
     const path = `${folder}/${randomUUID()}-${safeBase}.${extensionByMime[mimeType]}`;
-    const client = createAdminClient();
+    const client = await createAdminSessionClient();
 
     const { data, error } = await client.storage
       .from(MEDIA_BUCKET)
@@ -291,11 +292,7 @@ export async function createMediaUploadTicket(
     }
 
     const publicUrl = client.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
-    const projectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-    if (!projectUrl) throw new Error('Supabase URL is missing.');
-
-    const projectRef = new URL(projectUrl).hostname.split('.')[0];
+    const projectRef = new URL(SUPABASE_URL).hostname.split('.')[0];
     const uploadEndpoint = `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`;
 
     return {
