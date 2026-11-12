@@ -131,16 +131,14 @@ export async function createAdminContent(
       if (error) throw error;
     } else {
       const name = textValue(formData, 'title');
-      const contentType = textValue(formData, 'content_type');
-      const contentId = textValue(formData, 'content_id');
+      const creativeMode = textValue(formData, 'creative_mode') || 'direct';
       const placement = textValue(formData, 'placement') || 'articles_feed';
       const frequencyEvery = Number(textValue(formData, 'frequency_every') || 5);
 
       if (!name) return { ok: false, error: 'Campaign name is required.' };
-      if (!['article', 'video'].includes(contentType)) {
-        return { ok: false, error: 'Choose a campaign content type.' };
+      if (!['direct', 'linked_content'].includes(creativeMode)) {
+        return { ok: false, error: 'Invalid campaign creative mode.' };
       }
-      if (!contentId) return { ok: false, error: 'Choose content for this campaign.' };
       if (!['articles_feed', 'videos_feed', 'specific_category'].includes(placement)) {
         return { ok: false, error: 'Invalid placement.' };
       }
@@ -148,21 +146,65 @@ export async function createAdminContent(
         return { ok: false, error: 'Frequency must be between 1 and 50 cards.' };
       }
 
-      const { error } = await client.from('admin_campaigns').insert({
-        name,
-        content_type: contentType,
-        article_id: contentType === 'article' ? contentId : null,
-        video_id: contentType === 'video' ? contentId : null,
-        placement,
-        target_category: optionalText(formData, 'target_category'),
-        frequency_every: frequencyEvery,
-        priority,
-        status,
-        start_at: startAt,
-        end_at: endAt,
-      });
+      if (creativeMode === 'direct') {
+        const headline = textValue(formData, 'headline');
+        const imageUrl = optionalUrl(formData, 'image_url');
 
-      if (error) throw error;
+        if (!headline) return { ok: false, error: 'Campaign headline is required.' };
+        if (!imageUrl) return { ok: false, error: 'Campaign image is required.' };
+        if (placement === 'videos_feed') {
+          return { ok: false, error: 'Direct image campaigns can only use the Articles Feed or a specific category.' };
+        }
+
+        const { error } = await client.from('admin_campaigns').insert({
+          name,
+          creative_mode: 'direct',
+          content_type: 'article',
+          article_id: null,
+          video_id: null,
+          headline,
+          description: textValue(formData, 'summary'),
+          image_url: imageUrl,
+          brand: optionalText(formData, 'brand'),
+          cta_text: optionalText(formData, 'cta_text'),
+          cta_url: optionalUrl(formData, 'cta_url'),
+          sponsored: formData.get('sponsored') === 'on',
+          placement,
+          target_category: optionalText(formData, 'target_category'),
+          frequency_every: frequencyEvery,
+          priority,
+          status,
+          start_at: startAt,
+          end_at: endAt,
+        });
+
+        if (error) throw error;
+      } else {
+        const contentType = textValue(formData, 'content_type');
+        const contentId = textValue(formData, 'content_id');
+
+        if (!['article', 'video'].includes(contentType)) {
+          return { ok: false, error: 'Choose a campaign content type.' };
+        }
+        if (!contentId) return { ok: false, error: 'Choose content for this campaign.' };
+
+        const { error } = await client.from('admin_campaigns').insert({
+          name,
+          creative_mode: 'linked_content',
+          content_type: contentType,
+          article_id: contentType === 'article' ? contentId : null,
+          video_id: contentType === 'video' ? contentId : null,
+          placement,
+          target_category: optionalText(formData, 'target_category'),
+          frequency_every: frequencyEvery,
+          priority,
+          status,
+          start_at: startAt,
+          end_at: endAt,
+        });
+
+        if (error) throw error;
+      }
     }
 
     revalidatePath(pathFor(kind));
@@ -235,20 +277,21 @@ export async function deleteAdminContent(
 
 
 export async function createMediaUploadTicket(
-  mediaKind: 'article-image' | 'video',
+  mediaKind: 'article-image' | 'campaign-image' | 'video',
   fileName: string,
   mimeType: string,
   size: number,
 ): Promise<MediaUploadResult> {
   try {
-    const allowed = mediaKind === 'article-image' ? IMAGE_TYPES : VIDEO_TYPES;
-    const maxSize = mediaKind === 'article-image' ? 10 * 1024 * 1024 : 100 * 1024 * 1024;
+    const isImage = mediaKind !== 'video';
+    const allowed = isImage ? IMAGE_TYPES : VIDEO_TYPES;
+    const maxSize = isImage ? 10 * 1024 * 1024 : 100 * 1024 * 1024;
 
     if (!allowed.has(mimeType)) {
       return {
         ok: false,
         error:
-          mediaKind === 'article-image'
+          isImage
             ? 'Use a JPG, PNG or WebP image.'
             : 'Use an MP4, WebM or MOV video.',
       };
@@ -258,7 +301,7 @@ export async function createMediaUploadTicket(
       return {
         ok: false,
         error:
-          mediaKind === 'article-image'
+          isImage
             ? 'Image must be 10 MB or smaller.'
             : 'Video must be 100 MB or smaller.',
       };
@@ -273,7 +316,12 @@ export async function createMediaUploadTicket(
       'video/quicktime': 'mov',
     };
 
-    const folder = mediaKind === 'article-image' ? 'articles' : 'videos';
+    const folder =
+      mediaKind === 'article-image'
+        ? 'articles'
+        : mediaKind === 'campaign-image'
+          ? 'campaigns'
+          : 'videos';
     const safeBase = fileName
       .replace(/\.[^/.]+$/, '')
       .replace(/[^a-zA-Z0-9_-]+/g, '-')
