@@ -1,10 +1,25 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { randomUUID } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { AdminKind, AdminStatus } from '@/types';
 
 type ActionResult = { ok: true } | { ok: false; error: string };
+
+type MediaUploadResult =
+  | {
+      ok: true;
+      path: string;
+      token: string;
+      publicUrl: string;
+      uploadEndpoint: string;
+    }
+  | { ok: false; error: string };
+
+const MEDIA_BUCKET = 'admin-campaign-media';
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const VIDEO_TYPES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
 
 const statuses = new Set<AdminStatus>(['draft', 'scheduled', 'active', 'paused', 'archived']);
 
@@ -213,6 +228,87 @@ export async function deleteAdminContent(
         message.includes('foreign key')
           ? 'This content is used by a campaign. Archive it or remove the campaign first.'
           : message,
+    };
+  }
+}
+
+
+export async function createMediaUploadTicket(
+  mediaKind: 'article-image' | 'video',
+  fileName: string,
+  mimeType: string,
+  size: number,
+): Promise<MediaUploadResult> {
+  try {
+    const allowed = mediaKind === 'article-image' ? IMAGE_TYPES : VIDEO_TYPES;
+    const maxSize = mediaKind === 'article-image' ? 10 * 1024 * 1024 : 100 * 1024 * 1024;
+
+    if (!allowed.has(mimeType)) {
+      return {
+        ok: false,
+        error:
+          mediaKind === 'article-image'
+            ? 'Use a JPG, PNG or WebP image.'
+            : 'Use an MP4, WebM or MOV video.',
+      };
+    }
+
+    if (!Number.isFinite(size) || size <= 0 || size > maxSize) {
+      return {
+        ok: false,
+        error:
+          mediaKind === 'article-image'
+            ? 'Image must be 10 MB or smaller.'
+            : 'Video must be 100 MB or smaller.',
+      };
+    }
+
+    const extensionByMime: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'video/mp4': 'mp4',
+      'video/webm': 'webm',
+      'video/quicktime': 'mov',
+    };
+
+    const folder = mediaKind === 'article-image' ? 'articles' : 'videos';
+    const safeBase = fileName
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[^a-zA-Z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'media';
+
+    const path = `${folder}/${randomUUID()}-${safeBase}.${extensionByMime[mimeType]}`;
+    const client = createAdminClient();
+
+    const { data, error } = await client.storage
+      .from(MEDIA_BUCKET)
+      .createSignedUploadUrl(path);
+
+    if (error || !data?.token) {
+      throw error ?? new Error('Unable to create upload URL.');
+    }
+
+    const publicUrl = client.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
+    const projectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    if (!projectUrl) throw new Error('Supabase URL is missing.');
+
+    const projectRef = new URL(projectUrl).hostname.split('.')[0];
+    const uploadEndpoint = `https://${projectRef}.storage.supabase.co/storage/v1/upload/resumable`;
+
+    return {
+      ok: true,
+      path,
+      token: data.token,
+      publicUrl,
+      uploadEndpoint,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unable to prepare upload.',
     };
   }
 }
