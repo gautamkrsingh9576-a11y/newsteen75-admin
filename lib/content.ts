@@ -19,12 +19,12 @@ export async function getContentManagerData(kind: AdminKind): Promise<ContentMan
   const [articlesResult, videosResult] = await Promise.all([
     client
       .from('admin_custom_articles')
-      .select('id,headline,status')
+      .select('id,headline,status,image_url')
       .order('updated_at', { ascending: false })
       .limit(200),
     client
       .from('admin_custom_videos')
-      .select('id,title,status')
+      .select('id,title,status,video_url')
       .order('updated_at', { ascending: false })
       .limit(200),
   ]);
@@ -36,12 +36,14 @@ export async function getContentManagerData(kind: AdminKind): Promise<ContentMan
     id: row.id,
     label: row.headline,
     status: row.status,
+    media_url: row.image_url,
   }));
 
   const videoOptions: ContentOption[] = (videosResult.data ?? []).map((row) => ({
     id: row.id,
     label: row.title,
     status: row.status,
+    media_url: row.video_url,
   }));
 
   if (kind === 'articles') {
