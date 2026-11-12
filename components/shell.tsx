@@ -10,8 +10,10 @@ import {
   RefreshCw,
   ChevronDown,
   CircleHelp,
+  LogOut,
 } from 'lucide-react';
 import { nav } from '@/lib/navigation';
+import { createBrowserSupabaseClient } from '@/lib/supabase/browser';
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -19,6 +21,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const page = nav.find((n) => n.href === path)?.label || 'Overview';
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    const client = createBrowserSupabaseClient();
+    await client.auth.signOut();
+    window.location.assign('/login');
+  }
 
   useEffect(() => {
     const id = window.setInterval(() => router.refresh(), 30000);
@@ -82,9 +92,19 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <div className="avatar">N</div>
             <div className="profile-text brand-text">
               <strong>Administrator</strong>
-              <small>Direct dashboard access</small>
+              <small>Secure admin session</small>
             </div>
           </div>
+
+          <button
+            className="logout-btn"
+            type="button"
+            onClick={handleLogout}
+            disabled={loggingOut}
+          >
+            <LogOut size={17} />
+            <span className="brand-text">{loggingOut ? 'Signing out…' : 'Logout'}</span>
+          </button>
         </div>
       </aside>
 
