@@ -130,12 +130,12 @@ export async function createAdminContent(
 
       if (error) throw error;
     } else {
-      const name = textValue(formData, 'title');
+      const enteredName = textValue(formData, 'title');
+      const name = enteredName || `Campaign ${new Date().toISOString().replace('T', ' ').slice(0, 16)}`;
       const creativeMode = textValue(formData, 'creative_mode') || 'direct';
       const placement = textValue(formData, 'placement') || 'articles_feed';
       const frequencyEvery = Number(textValue(formData, 'frequency_every') || 5);
 
-      if (!name) return { ok: false, error: 'Campaign name is required.' };
       if (!['direct', 'linked_content'].includes(creativeMode)) {
         return { ok: false, error: 'Invalid campaign creative mode.' };
       }
@@ -147,10 +147,9 @@ export async function createAdminContent(
       }
 
       if (creativeMode === 'direct') {
-        const headline = textValue(formData, 'headline');
+        const headline = optionalText(formData, 'headline');
         const imageUrl = optionalUrl(formData, 'image_url');
 
-        if (!headline) return { ok: false, error: 'Campaign headline is required.' };
         if (!imageUrl) return { ok: false, error: 'Campaign image is required.' };
         if (placement === 'videos_feed') {
           return { ok: false, error: 'Direct image campaigns can only use the Articles Feed or a specific category.' };
@@ -163,7 +162,7 @@ export async function createAdminContent(
           article_id: null,
           video_id: null,
           headline,
-          description: textValue(formData, 'summary'),
+          description: optionalText(formData, 'summary'),
           image_url: imageUrl,
           brand: optionalText(formData, 'brand'),
           cta_text: optionalText(formData, 'cta_text'),
