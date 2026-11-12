@@ -138,7 +138,6 @@ Deno.serve(async (req) => {
         if (campaign.creative_mode === "direct") {
           if (
             campaign.content_type !== "article" ||
-            !campaign.headline ||
             !campaign.image_url
           ) {
             return null;
@@ -159,7 +158,7 @@ Deno.serve(async (req) => {
               id: campaign.id,
               campaign_id: campaign.id,
               is_campaign: true,
-              headline: campaign.headline,
+              headline: campaign.headline ?? campaign.name ?? "",
               summary: campaign.description ?? "",
               image_url: campaign.image_url,
               category: campaign.target_category,
