@@ -19,6 +19,7 @@ export type ContentOption={
   id:string;
   label:string;
   status:AdminStatus;
+  media_url:string|null;
 };
 
 export type AdminArticle={
