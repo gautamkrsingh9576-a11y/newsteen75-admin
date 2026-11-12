@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { notFound } from 'next/navigation';
 import AnalyticsView from '@/components/analytics-view';
 import ContentManager from '@/components/content-manager';
@@ -31,7 +34,11 @@ export default async function Page({
           videoOptions={data.videoOptions}
         />
       );
-    } catch {
+    } catch (error) {
+      const detail =
+        error instanceof Error && error.message.includes('configuration is missing')
+          ? 'Server environment is not available in the production runtime.'
+          : 'The production runtime could not query the Supabase admin tables.';
       return (
         <>
           <div className="page-heading">
@@ -43,7 +50,7 @@ export default async function Page({
           </div>
           <div className="notice notice-error">
             <strong>Content backend unavailable</strong>
-            <span>Check the server Supabase configuration and refresh this page.</span>
+            <span>{detail}</span>
           </div>
         </>
       );
