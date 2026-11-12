@@ -1,12 +1,13 @@
 'use client';
 
-import { ChangeEvent, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import * as tus from 'tus-js-client';
 import { Image as ImageIcon, Upload, Video } from 'lucide-react';
 import { createMediaUploadTicket } from '@/app/content-actions';
 
 type MediaKind = 'article-image' | 'campaign-image' | 'video';
-type ResizeMode = 'crop' | 'fit';
+export type ResizeMode = 'crop' | 'fit';
+export type CampaignImagePreview = { url: string; mode: ResizeMode; zoom: number };
 
 type Props = {
   kind: MediaKind;
@@ -14,6 +15,7 @@ type Props = {
   label: string;
   value: string;
   onUploaded: (url: string) => void;
+  onPreviewChange?: (preview: CampaignImagePreview | null) => void;
 };
 
 const TARGET_RATIO = 9 / 16;
@@ -27,6 +29,7 @@ export default function MediaUploader({
   label,
   value,
   onUploaded,
+  onPreviewChange,
 }: Props) {
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -34,13 +37,18 @@ export default function MediaUploader({
   const [pendingDimensions, setPendingDimensions] = useState<{ width: number; height: number } | null>(null);
   const [resizeMode, setResizeMode] = useState<ResizeMode>('crop');
   const [zoom, setZoom] = useState(100);
+  const [previewUrl, setPreviewUrl] = useState('');
   const isVideo = kind === 'video';
   const isCampaignImage = kind === 'campaign-image';
 
-  const previewUrl = useMemo(
-    () => (pendingFile ? URL.createObjectURL(pendingFile) : ''),
-    [pendingFile],
-  );
+  useEffect(() => {
+    if (!isCampaignImage || !previewUrl || !pendingFile) {
+      onPreviewChange?.(null);
+      return;
+    }
+
+    onPreviewChange?.({ url: previewUrl, mode: resizeMode, zoom });
+  }, [isCampaignImage, onPreviewChange, pendingFile, previewUrl, resizeMode, zoom]);
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -54,6 +62,8 @@ export default function MediaUploader({
         : await readImageDimensions(file);
 
       if (isCampaignImage) {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(URL.createObjectURL(file));
         setPendingFile(file);
         setPendingDimensions(dimensions);
         setResizeMode('crop');
@@ -106,6 +116,8 @@ export default function MediaUploader({
     try {
       const processed = await resizeCampaignImage(pendingFile, resizeMode, zoom / 100);
       await uploadFile(processed);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
       setPendingFile(null);
       setPendingDimensions(null);
     } catch (resizeError) {
@@ -119,6 +131,9 @@ export default function MediaUploader({
   }
 
   function clearPending() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl('');
+    onPreviewChange?.(null);
     setPendingFile(null);
     setPendingDimensions(null);
     setProgress(null);
@@ -165,10 +180,6 @@ export default function MediaUploader({
 
       {isCampaignImage && pendingFile ? (
         <div className="campaign-resize-panel">
-          <div className="campaign-resize-preview">
-            <img src={previewUrl} alt="Selected campaign creative" />
-          </div>
-
           <div className="campaign-resize-info">
             <strong>Resize before upload</strong>
             <span>
