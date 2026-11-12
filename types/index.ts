@@ -9,6 +9,42 @@ export type AnalyticsSummary = {
   top_videos?:{video_id:string; title:string; views:number; starts:number; completions:number}[];
   app_versions?:{app_version:string; events:number}[];
   recent_errors?:{created_at:string; message:string}[];
+  system_metrics?:{
+    total_articles:number;
+    articles_today:number;
+    articles_last_24h:number;
+    total_videos:number;
+    videos_today:number;
+    videos_last_24h:number;
+    approved_channels:number;
+    active_channels:number;
+    article_ingestion_runs:number;
+    video_ingestion_runs:number;
+    saved_articles:number;
+    unique_savers:number;
+    seen_records:number;
+    unique_seen_users:number;
+    user_preferences:number;
+  };
+  inventory_categories?:{category:string; articles:number; videos:number}[];
+  inventory_publishers?:{publisher:string; articles:number}[];
+  latest_article_ingestion?:{
+    ran_at:string;
+    status:string;
+    fetched_count:number;
+    feed_count:number;
+    archived_count:number;
+    error_message:string|null;
+  };
+  latest_video_ingestion?:{
+    ran_at:string;
+    status:string;
+    channels_checked:number;
+    fetched_count:number;
+    upserted_count:number;
+    error_message:string|null;
+  };
+  generated_at?:string;
   total_events:number;
 };
 
