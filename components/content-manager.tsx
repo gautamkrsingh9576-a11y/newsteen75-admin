@@ -2,7 +2,7 @@
 
 import { FormEvent, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import MediaUploader from '@/components/media-uploader';
+import MediaUploader, { type CampaignImagePreview } from '@/components/media-uploader';
 import {
   Plus,
   FileText,
@@ -58,6 +58,7 @@ export default function ContentManager({
   const [creativeMode, setCreativeMode] = useState<'direct' | 'linked_content'>('direct');
   const [contentType, setContentType] = useState<'article' | 'video'>('article');
   const [campaignHeadline, setCampaignHeadline] = useState('');
+  const [campaignImagePreview, setCampaignImagePreview] = useState<CampaignImagePreview | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [selectedContentId, setSelectedContentId] = useState('');
@@ -71,7 +72,9 @@ export default function ContentManager({
   const activeOptions = contentType === 'article' ? articleOptions : videoOptions;
   const selectedCampaignContent = activeOptions.find((option) => option.id === selectedContentId);
   const campaignPreviewUrl =
-    creativeMode === 'direct' ? imageUrl : selectedCampaignContent?.media_url || '';
+    creativeMode === 'direct'
+      ? campaignImagePreview?.url || imageUrl
+      : selectedCampaignContent?.media_url || '';
 
   function closeModal() {
     if (pending) return;
@@ -100,6 +103,7 @@ export default function ContentManager({
       setCreativeMode('direct');
       setContentType('article');
       setCampaignHeadline('');
+      setCampaignImagePreview(null);
       setImageUrl('');
       setVideoUrl('');
       setSelectedContentId('');
@@ -282,13 +286,17 @@ export default function ContentManager({
             <div className="form-layout">
               <form className="content-form" onSubmit={handleCreate}>
                 <label>
-                  {isArticle ? 'Headline' : isVideo ? 'Video Title' : 'Campaign Name'}
+                  {isArticle ? 'Headline' : isVideo ? 'Video Title' : 'Campaign Name (optional)'}
                   <input
                     name="title"
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
-                    placeholder={`Enter ${singular.toLowerCase()} title`}
-                    required
+                    placeholder={
+                      kind === 'campaigns'
+                        ? 'Leave blank to auto-generate'
+                        : `Enter ${singular.toLowerCase()} title`
+                    }
+                    required={kind !== 'campaigns'}
                   />
                 </label>
 
@@ -314,18 +322,17 @@ export default function ContentManager({
                     {creativeMode === 'direct' ? (
                       <>
                         <label>
-                          Campaign Headline
+                          Campaign Headline (optional)
                           <input
                             name="headline"
                             value={campaignHeadline}
                             onChange={(event) => setCampaignHeadline(event.target.value)}
-                            placeholder="Headline shown in the app"
-                            required
+                            placeholder="Optional headline shown in the app"
                           />
                         </label>
 
                         <label>
-                          Description
+                          Description (optional)
                           <textarea
                             name="summary"
                             value={summary}
@@ -340,10 +347,11 @@ export default function ContentManager({
                           label="Campaign Image"
                           value={imageUrl}
                           onUploaded={setImageUrl}
+                          onPreviewChange={setCampaignImagePreview}
                         />
 
                         <label>
-                          Brand / Source
+                          Brand / Source (optional)
                           <input
                             name="brand"
                             value={brand}
@@ -354,11 +362,11 @@ export default function ContentManager({
 
                         <div className="form-grid">
                           <label>
-                            CTA Text
+                            CTA Text (optional)
                             <input name="cta_text" placeholder="Learn more" />
                           </label>
                           <label>
-                            CTA URL
+                            CTA URL (optional)
                             <input name="cta_url" type="url" placeholder="https://" />
                           </label>
                         </div>
@@ -535,11 +543,11 @@ export default function ContentManager({
                     </select>
                   </label>
                   <label>
-                    Start date and time
+                    Start date and time (optional)
                     <input name="start_at" type="datetime-local" />
                   </label>
                   <label>
-                    End date and time
+                    End date and time (optional)
                     <input name="end_at" type="datetime-local" />
                   </label>
                 </div>
@@ -547,11 +555,9 @@ export default function ContentManager({
                 {error ? <div className="error">{error}</div> : null}
 
                 <div className="form-actions">
-                  {kind === 'campaigns' && creativeMode === 'direct' && (!campaignHeadline || !imageUrl) ? (
+                  {kind === 'campaigns' && creativeMode === 'direct' && !imageUrl ? (
                     <div className="save-hint">
-                      {!campaignHeadline
-                        ? 'Add a campaign headline to continue.'
-                        : 'Resize & Upload the campaign image to continue.'}
+                      Select an image, adjust it in the phone preview, then press Resize & Upload.
                     </div>
                   ) : null}
 
@@ -565,7 +571,7 @@ export default function ContentManager({
                         activeOptions.length === 0) ||
                       (kind === 'campaigns' &&
                         creativeMode === 'direct' &&
-                        (!campaignHeadline || !imageUrl))
+                        !imageUrl)
                     }
                   >
                     {pending ? 'Saving…' : `Save ${singular}`}
@@ -577,13 +583,27 @@ export default function ContentManager({
                 <div className="eyebrow">{kind === 'campaigns' ? 'CAMPAIGN SUMMARY' : 'LIVE PREVIEW'}</div>
                 <p>{kind === 'campaigns' ? 'Campaign setup preview' : 'Mobile card preview'}</p>
 
-                <div className="phone-preview">
+                <div className={`phone-preview ${kind === 'campaigns' && creativeMode === 'direct' ? 'campaign-phone-preview' : ''}`}>
                   <div className="preview-img">
                     {kind === 'campaigns' && campaignPreviewUrl ? (
                       creativeMode === 'linked_content' && contentType === 'video' ? (
                         <video src={campaignPreviewUrl} muted playsInline />
                       ) : (
-                        <img src={campaignPreviewUrl} alt="Campaign preview" />
+                        <img
+                          src={campaignPreviewUrl}
+                          alt="Campaign preview"
+                          style={
+                            creativeMode === 'direct' && campaignImagePreview
+                              ? {
+                                  objectFit: campaignImagePreview.mode === 'fit' ? 'contain' : 'cover',
+                                  transform:
+                                    campaignImagePreview.mode === 'crop'
+                                      ? `scale(${campaignImagePreview.zoom / 100})`
+                                      : 'none',
+                                }
+                              : undefined
+                          }
+                        />
                       )
                     ) : isVideo && videoUrl ? (
                       <video src={videoUrl} muted playsInline />
@@ -605,18 +625,21 @@ export default function ContentManager({
                           : 'NEWS TEEN 75 CAMPAIGN'
                         : brand || 'BRAND / SOURCE'}
                     </small>
-                    <h3>
-                      {kind === 'campaigns' && creativeMode === 'direct'
-                        ? campaignHeadline || 'Campaign headline appears here'
-                        : title || `Your ${singular.toLowerCase()} title appears here`}
-                    </h3>
-                    <p>
-                      {kind === 'campaigns'
-                        ? creativeMode === 'direct'
-                          ? summary || 'Campaign description appears here.'
-                          : `${contentType === 'article' ? 'Article' : 'Video'} promotion`
-                        : summary || 'A short description will appear here.'}
-                    </p>
+                    {kind === 'campaigns' && creativeMode === 'direct' ? (
+                      <>
+                        {campaignHeadline ? <h3>{campaignHeadline}</h3> : null}
+                        {summary ? <p>{summary}</p> : null}
+                      </>
+                    ) : (
+                      <>
+                        <h3>{title || `Your ${singular.toLowerCase()} title appears here`}</h3>
+                        <p>
+                          {kind === 'campaigns'
+                            ? `${contentType === 'article' ? 'Article' : 'Video'} promotion`
+                            : summary || 'A short description will appear here.'}
+                        </p>
+                      </>
+                    )}
                     <div className="preview-footer">
                       NewsTeen75 <span>↗</span>
                     </div>
